@@ -1,0 +1,16 @@
+---
+all:
+  vars:
+    zone: us-central1-c
+    gcloudbin: /usr/bin/gcloud
+    cluster: alan-cluster-test
+gke_instance:
+  hosts:
+    test:
+      machine_type: e2-medium
+      boot_disk_size: 100
+      boot_disk_type: pd-standard
+      num_nodes: 1
+      max_nodes: 3
+      mix_nodes: 1
+      node_labels: test

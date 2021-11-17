@@ -1,0 +1,7 @@
+---
+- name: Create New GKE instances
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
+    - include_tasks: roles/instance/tasks/create.yml

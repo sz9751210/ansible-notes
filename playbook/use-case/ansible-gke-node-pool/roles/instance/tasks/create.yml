@@ -1,0 +1,26 @@
+---
+    - name: launch agent instances
+      command: "{{ gcloudbin }} container node-pools create {{ hostvars[item].inventory_hostname }}
+               --zone {{ zone }}
+               --cluster {{ cluster }}
+               --machine-type {{ hostvars[item].machine_type }}
+               --num-nodes {{ hostvars[item].num_nodes }}
+               --enable-autoscaling
+               --max-nodes {{ hostvars[item].max_nodes }}
+               --min-nodes {{ hostvars[item].mix_nodes }}
+               --node-labels app={{ hostvars[item].node_labels }}
+               --disk-size {{ hostvars[item].boot_disk_size }}
+               --disk-type {{ hostvars[item].boot_disk_type }}"
+      with_items:
+        - "{{ groups['gke_instance'] }}"
+      register: gke_instances
+      async: 7200
+      poll: 0
+     
+    - name: wait for instance creation to complete
+      async_status: jid={{ item.ansible_job_id }}
+      register: instances_jobs
+      until: instances_jobs.finished
+      retries: 300
+      delay: 10
+      with_items: "{{ gke_instances.results }}"
