@@ -1,0 +1,5 @@
+---
+## Monitor Variable ##
+enabled_monitor: true
+enabled_node_exporter: true
+enabled_redis_exporter: true

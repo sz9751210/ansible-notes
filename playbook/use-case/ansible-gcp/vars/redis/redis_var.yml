@@ -1,0 +1,9 @@
+---
+# 單台： isRedisMS: false, isRedisCluster: false
+# # 主從： isRedisMS: true,  isRedisCluster: false
+# # 叢集： isRedisMS: false, isRedisCluster: true
+isRedisMS: true
+isRedisCluster: false
+
+# Set redis master hostname
+redis_master: {{ hostname }}

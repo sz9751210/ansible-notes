@@ -1,0 +1,21 @@
+---
+- name: install redis
+  include: install_redis.yml
+
+- name: set up redis M/S role
+  include: setup_ms_role.yml
+  when:
+    - isRedisMS
+    - not isRedisCluster
+
+- name: set up redis cluster role
+  include: setup_cluster_role.yml
+  when:
+    - isRedisCluster
+    - not isRedisMS
+  run_once: true
+
+- name: delete rdb file
+  file:
+    path: /var/lib/redis/dump.rdb
+    state: absent

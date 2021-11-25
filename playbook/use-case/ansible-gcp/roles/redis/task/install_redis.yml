@@ -1,0 +1,53 @@
+---
+- name: setup redis if creating by custom
+  block:
+    - name: copy redis bin file
+      copy:
+        src: "{{ playbook_dir }}/files/redis/bin/"
+        dest: /usr/bin
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: copy redis systemctl config
+      copy:
+        src: "{{ playbook_dir }}/files/redis/conf/redis.service"
+        dest: /usr/lib/systemd/system/redis.service
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: create redis log directory
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      with_items:
+        - "/var/log/redis"
+        - "/var/lib/redis"
+    
+    - name: setting kernel
+      shell: |
+        echo never > /sys/kernel/mm/transparent_hugepage/enabled
+        echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' >> /etc/rc.local
+    
+    - name: setting rc.local permission
+      file:
+        path: /etc/rc.d/rc.local
+        mode: '0755'
+  when: not createdByImage 
+
+- name: copy redis config file
+  copy:
+    src: "{{ playbook_dir }}/files/redis/conf/redis.conf.{{ 'cluster' if isRedisCluster else 'ms' }}"
+    dest: /etc/redis.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: start redis server
+  systemd:
+    name: redis
+    state: started
+    daemon_reload: yes
+

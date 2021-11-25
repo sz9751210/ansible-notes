@@ -1,0 +1,10 @@
+---
+- name: check redis status
+  shell: "/usr/bin/redis-cli ping"
+  register: redis_status
+  until: redis_status.stdout.find("PONG") != -1
+
+- name: setting redis slave when master_redis is defined
+  shell: "/usr/bin/redis-cli REPLICAOF {{ hostvars[redis_master]['internal_ip'] }} 6379"
+  when:
+    - inventory_hostname != redis_master

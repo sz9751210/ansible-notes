@@ -1,0 +1,25 @@
+---
+- name: check redis service
+  command: "/usr/bin/redis-cli -h {{ hostvars[item].inventory_hostname }} ping"
+  with_items:
+    - "{{ groups['creation'] }}"
+  register: redis_status
+  retries: 300
+  until: redis_status.stdout.find("PONG") != -1
+
+- debug:
+    msg: "redis-cli --cluster create 
+            {% for redis_node in groups['creation'] %}
+              {{ hostvars[redis_node].internal_ip }}:6379
+            {% endfor %}
+          --cluster-replicas 0"
+
+- name: set up redis cluster
+  shell: "echo 'yes' | redis-cli --cluster create
+            {% for redis_node in groups['creation'] %}
+              {{ hostvars[redis_node].internal_ip }}:6379
+            {% endfor %}
+          --cluster-replicas 0" 
+
+- name: check cluster status
+  shell: "redis-cli --cluster check 127.0.0.1:6379"

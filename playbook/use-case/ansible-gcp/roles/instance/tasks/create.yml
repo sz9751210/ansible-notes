@@ -1,0 +1,89 @@
+---
+  - name: remove agents from known_hosts file
+    command: /usr/bin/ssh-keygen -R {{ hostvars[item].inventory_hostname }}
+    with_items:
+      - "{{ groups['creation'] }}"
+    ignore_errors: true
+
+  - name: merge label parameter
+    debug:
+      msg: >-
+        {% set index = 0 %}
+        {%- for key in label -%}
+          {%- set index = index + 1 -%}
+          {{ key }}={{ label[key] }}
+          {%- if index < (label|length) -%}
+          ,
+          {%- endif -%}
+        {%- endfor -%}
+    register: lebel_parm 
+
+  - name: Creating instances by machine image
+    block:
+      - name: creating
+        command: "{{ gcloud_bin_path }} beta compute instances create {{ hostvars[item].inventory_hostname }}
+                  --project {{ project }}
+                  --zone {{ zone }}
+                  --source-machine-image {{ source_machine_image }}
+                  --machine-type {{ machine_type }}
+                  --subnet {{ subnet }}
+                  --private-network-ip {{ hostvars[item].internal_ip }}
+                  --no-address
+                  --labels={{ lebel_parm.msg }}
+                  --tags={{ tags | join(',') }}"
+        with_items:
+          - "{{ groups['creation'] }}"
+        register: vm_instances_by_image
+        async: 100
+        poll: 0
+
+      - name: wait for instance creation to complete
+        async_status: jid={{ item.ansible_job_id }}
+        register: instances_jobs
+        until: instances_jobs.finished
+        retries: 300
+        with_items: "{{ vm_instances_by_image.results }}"
+    when: createdByImage
+
+  - name: Creating instances by custom
+    block:
+      - name: creating
+        command: "{{ gcloud_bin_path }} compute instances create {{ hostvars[item].inventory_hostname }}
+                  --project {{ project }}
+                  --zone {{ zone }}
+                  --image {{ image }}
+                  --image-project {{ image_project }}
+                  --machine-type {{ machine_type }}
+                  --subnet {{ subnet }}
+                  --private-network-ip {{ hostvars[item].internal_ip }}
+                  --no-address
+                  --labels={{ lebel_parm.msg }}
+                  --tags={{ tags | join(',') }}
+                  --boot-disk-size {{ boot_disk_size }}
+                  --boot-disk-type {{ boot_disk_type }}
+                  --boot-disk-device-name {{ hostvars[item].inventory_hostname }} "
+        with_items:
+          - "{{ groups['creation'] }}"
+        register: vm_instances_by_custom
+        async: 100
+        poll: 0
+        when: not createdByImage
+
+      - name: wait for instance creation to complete
+        async_status: jid={{ item.ansible_job_id }}
+        register: instances_jobs
+        until: instances_jobs.finished
+        retries: 300
+        with_items: "{{ vm_instances_by_custom.results }}"
+        
+      - name: Write the new gcp instance host key to known hosts
+        shell: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"
+    when: not createdByImage
+
+  - name: Reserve static internal ip address
+    command: "/usr/bin/gcloud compute addresses create {{ item }}-internal
+              --region {{ region }}
+              --subnet {{ subnet }}
+              --addresses {{ hostvars[item]['internal_ip'] }}"
+    with_items:
+      - "{{ groups['creation'] }}"

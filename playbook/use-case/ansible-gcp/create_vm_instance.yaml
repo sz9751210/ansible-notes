@@ -1,0 +1,47 @@
+---
+- name: Create And Setup New instances
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  vars_files:
+    - vars/instance/instance_var.yml
+  tasks:
+    - include_tasks: roles/instance/tasks/create.yml
+
+- name: Setup New instances
+  hosts: creation
+  become: yes
+  become_user: root
+  gather_facts: no
+  vars_files:
+    - vars/instance/instance_var.yml
+  tasks: 
+    - include_tasks: roles/instance/tasks/setup.yml
+
+- name: Install Redis
+  hosts: creation
+  become: yes
+  become_user: root
+  gather_facts: no
+  vars_files:
+    - vars/redis/redis_var.yml
+  tasks:
+    - include_tasks: roles/redis/task/main.yml
+
+- name: Install Monitor
+  hosts: creation
+  become: yes
+  become_user: root
+  gather_facts: no
+  vars_files:
+    - vars/monitor/monitor_var.yml
+  tasks:
+    - include_tasks: roles/monitor/task/main.yml
+
+- name: Install Google Ops Agent
+  hosts: creation
+  become: yes
+  become_user: root
+  gather_facts: no
+  tasks:
+    - include_tasks: roles/ops_agent/task/main.yml

@@ -1,0 +1,27 @@
+## instance variable ##
+
+---
+## Setting Enviroment ##
+project: project-id
+region: us-central1
+zone: us-central1-b
+doSetup: true
+
+## Setting Instance ##
+image: centos-7-v20210721
+image_project: centos-cloud
+label:
+  dept: "ansible-test"
+  env: "dev"
+subnet: projects/project-id/regions/us-central1/subnetworks/default
+tags:
+  - http-server
+  - https-server
+  - redis-install
+  - monitor-install
+machine_type: n2-standard-2
+boot_disk_size: 20
+boot_disk_type: pd-standard
+
+## Setting the following variable, if creating by the template ##
+source_machine_image: projects/project-id/global/machineImages/test-image
